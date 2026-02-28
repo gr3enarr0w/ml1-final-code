@@ -1,0 +1,384 @@
+API v3.5 Documentation
+This is the current version, released in May 2025. Also see: endpoint reference. Switch to: API v1, API v2, API v4 BETA
+                                            
+  API v4 is currently in closed beta, and is scheduled to become available to all subscribers in March 2026. Click here for more information.
+
+Introduction
+This is the most recent version of the National Statistical API (v3.5, May 2025). It is a half-version upgrade and is fully backward-compatible with v3.0 (May 2024).
+
+For applications built between May 2022 and April 2024, please refer to the API v2 documentation. For applications built between March 2018 and April 2022, please refer to the API v1 documentation. API v1 was taken offline on December 31, 2024.
+
+  All National Statistical subscriptions include hourly API calls. NatStat offers a range of monthly and annual subscription packages for one or multiple data services, with recurring and non-recurring payment options to fit your budget and needs. Click here to find out more.
+
+  NatStat API v3.5 contains 29 data endpoints. Click here to view the detailed endpoint reference.
+
+The National Statistical API is a REST-ful data service offering real-time and historical data for 29 national, international and collegiate competition levels of basketball, baseball, hockey, American football and soccer. It is owned and operated by National Statistical, which has been offering sports data services since 2007.
+
+This is a paid service limited to National Statistical customers who have purchased subscriptions, and is limited to data associated with active subscriptions.
+
+The design of our databases and delivery systems is ©2007-2025 National Statistical. Usage of this system and provided services grants a non-exclusive commercial license for any and all data retrieved via our websites and API. We are not responsible for any data or financial loss/damages that arise from use of our systems; please refer to our legal disclaimer for more information on liability, warranties and exceptions/exclusions. Also please refer to our policies on API abuse, detailed below in this document.
+
+  Not enough data? Move beyond API limits, access keys and pagination with the premium Interstat API.
+
+Quickstart
+Building a URI to query the National Statistical API begins with four basic requirements.
+
+⓵ All requests start with this base URI.
+
+https://api3.natst.at/
+
+⓶ The first path parameter is a valid API key. A key contains 11 characters (four alphanumeric characters, a dash, then six alphanumeric characters). The account's API key can be found on the National Statistical account page (requires login) in the NatStat API navigation tab, or under Analysis Tools > NatStat API > Query Builder on any of the 29 service subsites.
+
+https://api3.natst.at/xxxx-xxxxxx/
+
+⓷ The second path parameter is a valid endpoint. The available endpoints are boxscores, dataststus, elo, forecasts, games, glossary, lineups, moneyline, news, officials, overunder, pitchfx, playbyplay, playerperfs, players, pointspread, season, simulations, stats, teamperfs, teams, transactions, venues, winprob, teamcodes, leaguecodes. (Please note that not all sports return data for each endpoint.)
+
+More information on endpoints and full methods can be found at the endpoint reference.
+
+https://api3.natst.at/xxxx-xxxxxx/games/
+
+⓸ The third path parameter is one of the 29 sport data service codes (case-insensitive). A glossary of codes can be found below.
+
+https://api3.natst.at/xxxx-xxxxxx/games/nba/
+
+⓹ The fourth (optional) path parameter is a "range" that limits the scope of returned data.
+
+Season: The four-digit year of the date when the season ends. The default is the current season.
+
+https://api3.natst.at/xxxx-xxxxxx/games/milb/2025
+
+Date(s): In YYYY-MM-DD format. Supplying two dates will return an inclusive range of results.
+
+https://api3.natst.at/xxxx-xxxxxx/pointspread/kbo/2025-04-12
+
+Code: A non case-sensitive team, player or league code. A full list of team codes can be retrieved at the /teamcodes endpoint. A full list of team codes can be retrieved at the /leaguecodes endpoint. Player codes can be retrieved at the /players endpoint.
+
+https://api3.natst.at/xxxx-xxxxxx/games/fc/eng-pre
+
+Data Format: Data from the National Statistical API is available in three different formats. Users can specify which format to return with the format query parameter. If no data format is specified, the API will send JSON-formatted data by default.
+
+https://api3.natst.at/xxxx-xxxxxx/venues/wnba/xml
+
+The comma-separated and tab-separated (CSV/TSV) options were removed in API v2, as they are unable to handle multi-dimensional array objects. The Excel option was removed in API v2. If you require spreadsheet-formatted data, please review Analysis Tools > Data Exports from any of the 29 subsites' navigation menus.
+
+json	JavaScript Object Notation (default)
+xml	Extensible Markup Language
+php	PHP SimpleXML Object
+Search Term: If a comma-separated value is not matched with any of the above data types, the API will assume that it is a search term. The system will only accept the first entry in a comma-separated string as a search term.
+
+https://api3.natst.at/xxxx-xxxxxx/players/nba/curry
+
+Values may be used in combination to further refine a search.
+
+https://api3.natst.at/xxxx-xxxxxx/games/mlb/2024-05-09,2024-05-15,bos
+
+⓺ A fifth (optional) path parameter is a paginated "offset" number for recordsets. The default is 0, the beginning of the recordset.
+
+https://api3.natst.at/xxxx-xxxxxx/seasons/nba/_/100
+
+Changes in v3.5
+In addition to over 150 minor updates, upgrades, adjustments and bug removals, API v3.5 contains important differences from the original API v3 that was launched in May 2024.
+
+• The events endpoint has been added for all services. A query to this endpoint will return important real-time, in-game events in reverse chronological order. (Baseball: scoring plays; Basketball: runs, late lead changes, 30/40/50+ point games; Hockey: goals; Soccer: goals; American Football: TD, FG, turnovers.) This feed only contains events from the past 24 hours. For more events and advanced filtering functions, please consider the Interstat API.
+
+• The projline endpoint has been added for all basketball, baseball, hockey and soccer data services. A query to this endpoint will return projected player statlines for all of today's games within the specified competition level.
+
+• The Multiple IP Policy has been updated and clarified.
+
+• NatStat's API servers in Northern Virginia, Frankfurt and Tokyo have been significantly upgraded for faster and smoother processing of user requests.
+
+• API search-string functions have been improved or overhauled.
+
+Migrating From v2
+• API v3 utilizes the same simplified query structure as the premium Interstat API, making it easier than ever to write queries on the fly and make the most of hourly rate limits.
+
+• Three endpoints from API v2 have been fully depreciated and are not included in API v3: rpi, social, tweets.
+
+• The universal use of the term id has been discontinued in API v3. The term code indicates use with another endpoint: for example, GSW as a team code for Golden State Warriors, 15125 as a venue code for Chase Center, or 826 as a player code for Stephen Curry. The term id now implies a unique identifier for a data record.
+
+• The max_results query parameter has been phased out. All queries return a maximum of 100 records, except for events, playbyplay, pitchfx, teamcodes, leaguecodes (500 records).
+
+• All returned parameters are now in lowercase.
+
+• Please test any queries and attempt alternate formats to view any applicable errors or status messages before contacting support.
+
+Query Builder
+National Statistical provides an interactive web application to assist with the creation and testing of valid URIs.
+
+Access the Query Builder(s) that you are authorized to use under NatStat API on this page's navigation menu, or from any of the 29 service subsites under Analysis Tools > NatStat API > Query Builder.
+
+You can easily and quickly regenerate your API key with the link at the top of the screen. The number in the upper right corner is the number of API calls you have remaining for the current hour (:00 to :59), and the number of minutes before your rate limit resets.
+
+Create a URI with the text fields and pulldown menus, based on the displayed query parameters. Test the query by clicking Execute API Call. Copy the URI or the query output to your clipboard with one click. There is also an open-text field for team and player ID lookups.
+
+Code Samples
+Here are some examples of how to programatically fetch data from the National Statistical API.
+
+cURL
+curl https://api3.natst.at/xxxx-xxxxxx/..
+Perl
+use strict;
+use warnings;
+use Mojo::UserAgent;
+use Data::Dumper;
+
+my $url = "https://api3.natst.at/xxxx-xxxxxx/...";
+print Dumper(Mojo::UserAgent->new->get($url)->result->json);
+PHP
+$url = 'https://api3.natst.at/xxxx-xxxxxx/...';
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$data = curl_exec($ch);
+curl_close($ch);
+print_r(json_decode($data));
+Python
+import requests
+url = "https://api3.natst.at/xxxx-xxxxxx/..."
+print(requests.get(url).json())
+Parameters
+API Key
+Each valid request requires the inclusion of a valid API key as a query parameter. A key contains 11 characters: four alphanumeric characters, a dash, then six alphanumeric characters. Your account's current API key can be found on the National Statistical account page (requires login, located underneath the list of active subscriptions. (For new accounts, please note that it may take a few minutes to generate an initial API key.)
+
+https://api3.natst.at/xxxx-xxxxxx/...
+
+If no key is specified, an AUTHORIZE_FAILED error will be returned. If an invalid key is specified, a UNAUTHORIZED error will be returned.
+
+Data Service Code
+Most valid API requests require the inclusion of one of National Statistical's 29 data services, which each represent a level of competition in basketball, baseball, hockey, American football or soccer. The level parameter must be passed after the endpoint key in the URI, using the following format:
+
+https://api3.natst.at/xxxx-xxxxxx/games/XXX/...
+
+Abbrev	League	Full Data Back To
+AsiaBB	Asian professional basketball leagues	2012
+AmerBB	North/South/Central American professional basketball leagues	2012
+CBB	NCAA Division I College Baseball	2012
+EuroBB	European professional basketball leagues	2012
+FC	NatStat FC (soccer)	1908
+GL	NBA G League	2010
+KBO	Korean Baseball Organization	2010
+KHL	Kontinental Hockey League	2009
+MHK	NCAA Division I Men's Hockey	2016
+MLB	Major League Baseball	1920
+MiLB	Minor League Baseball	2012
+MiLH	Minor League Hockey	2012
+MBB	NCAA Men's Division I College Basketball	2008
+MB2	NCAA Men's Division II College Basketball	2012
+MB3	NCAA Men's Division III College Basketball	2012
+NBA	National Basketball Association	1991
+MBIA	NAIA Men's Basketball	2016
+MBJC	Junior College Men's Basketball	2016
+NHL	National Hockey League	1990
+NPB	Nippon Professional Baseball	1960
+WBB	NCAA Women's Division I College Basketball	2012
+WB2	NCAA Women's Division II College Basketball	2012
+WB3	NCAA Women's Division III College Basketball	2012
+WBIA	NAIA Women's Basketball	2016
+WBJC	Junior College Women's Basketball	2016
+WBPro	Women's International Pro Basketball	2019
+WHK	NCAA Division I Women's Hockey	2019
+WNBA	Women's National Basketball Association	2007
+PFB	Pro Football	2002
+CFB	College Football	2002
+Please note that the level parameter is not case sensitive. For instance: MiLB, MILB and milb will each work properly.
+
+Player, Team Stats
+When using the stats endpoint, add either player or team in the range. (The default is team.) The glossary endpoint returns a dictionary of stat codes that can be used in queries.
+
+https://api3.natst.at/xxxx-xxxxxx/glossary/mlb/
+
+Team, League, Player, Game Code Usage
+Specifying a code in the range will return all available information regarding a single data record. With most endpoints, not specifying a code will result in an overview list of available records with valid codes.
+
+Team: https://api3.natst.at/xxxx-xxxxxx/teams/milb/SLS
+
+League: https://api3.natst.at/xxxx-xxxxxx/leaguecodes/milb/international
+
+Player: https://api3.natst.at/xxxx-xxxxxx/players/milb/37994267
+
+Game: https://api3.natst.at/xxxx-xxxxxx/games/milb/10186874
+
+Data Lookups
+Use these forms to search for the two- to eight-character team and league codes to use as range parameters. Codes are not case-sensitive when used in queries. Codes are unique within data services, not across the whole 30-service system. Please note that this tool uses the HTML datalist tag and may not work on all mobile browsers.
+
+🔍  Teams (53,689)
+
+🔍  Leagues, Conferences, Competitions (2,357)
+
+Basic Response
+Success
+Responses in JSON and XML include a success node. If 1 is returned, the passed URI query is valid, and the database has been successfully queried. If 0 is returned, more information on the reason why the request failed will be included in the error or meta node.
+
+[success] => 1
+
+Errors
+Below are common errors returned by the API. These will be contained in the error node.
+
+UNDER_MAINTENANCE	The API is undergoing maintenance or temporary downtime. In the case of scheduled maintenance, the meta block will include details on when the API will be active again.
+AUTHORIZE_FAILED	The key is incorrect, invalid, or expired. Please refer to your account page (requires login) to check the API key.
+NO_ENDPOINT	A valid endpoint has not been specified. Please refer to the list of endpoints for guidance.
+PARAMETER_MISSING	A valid sport or level path parameter has not been specified. Please refer to the list of acceptable values.
+CONCURRENCY	The API key is attempting more than four queries per second, which is not permitted. This can be circumvented by subscribing to API+, which removes IP and concurrency restrictions.
+OUT_OF_RANGE	This message occurs when the API key is not valid for the sport requested (e.g. the API key is owned by a user with a valid NBA subscription, and the MBB endpoint is called).
+OUT_OF_CALLS	The API key has exceeded its rate limit. Please refer to information on rate limits.
+TOO_MANY_IPBLOCKS	The key has accessed the API from too many different IP blocks (X.X.-.-) within a 24-hour period. This can be circumvented by subscribing to API+, which removes IP and concurrency restrictions.
+APIPLUS_ONLY	You've attempted to access a premium service or closed beta that is only available to API+ subscribers. This can be remedied by subscribing to API+.
+BLOCKED	The API key has been temporarily suspended or permanently revoked, and you have been sent an email detailing why.
+User Node
+The user node is stamped with the authorized National Statistical account username attached to the API key, the sport levels the account is authorized to access via the API. This node also contains data on rate limits.
+
+All National Statistical API-enabled accounts are rate limited. All rate limits reset at the top of each hour. The user node includes information on the API key's current rate limitation status. Please review our three-strike policies on API abuse.
+
+<account>Anna Lytic</account>
+<levels>NBA,GL,EuroBB,AsiaBB,AmerBB</levels>
+<apiplus>no</ratelimit>
+<ratelimit>500</ratelimit>
+<ratelimit-remaining>274</ratelimit-remaining>
+<ratelimit-timeframe>hour</ratelimit-remaining>
+<ratelimit-reset>2025-05-01 09:01:03</ratelimit-reset>
+Meta Node
+The date and time of the query in the US Eastern (New York) timezone, results and pagination. Also included in the meta node are the requesting IP, the number of IP blocks that have accessed the API key in the last 24 hours, the URI for the stat glossary, as well as contextual team and league codes.
+
+<processing-time>0.013304948806763 sec</processing-time>
+<processed-at>9999-99-99 00:00:00</processed-at>
+<timezone>America/New_York</timezone>
+<ip>0.0.0.0</ip>
+<ip-last24>1 (0.0)</ip>
+<queryid>v35.0000000</queryid>
+<results-max>500</results-max>
+<results-total>24</results-total>
+<page>1</page>
+<pages-total>1</pages-total>
+<stat-glossary>https://api3.natst.at/xxxx-xxxxxx/glossary/milb</stat-glossary>
+<codes-teams>https://api3.natst.at/xxxx-xxxxxx/teamcodes/milb</codes-teams>
+<codes-leagues>https://api3.natst.at/xxxx-xxxxxx/leaguecodes/milb</codes-leagues>
+<api>National Statistical API</api>
+<version>3.5 (2025.05.01)</version>
+<documentation>https://natstat.com/api-v3/docs</documentation>
+<support>https://natstat.com/support</support>
+<errors>https://natstat.com/support</errors>
+<note>All times Eastern.</note>
+All timestamps in the National Statistical system are US Eastern (New York).
+
+API Key Reset
+If you have found that your API key (or code containing the key) has been compromised or forgotten, a new key can be easily generated.
+
+To reset your API key, navigate to Analysis Tools > NatStat API > Query Builder within a subsite that you have access to.
+
+Multiple IP Policy
+Account sharing is strictly prohibited, and controlling data traffic is paramount to maintaining low customer prices for you. Each API key is allowed access from up to four IP blocks (X.X.-.-) within any 24 hour period, which are listed in the meta node as ip-last24. Accessing the NatStat API from more than six IP blocks within 24 hours will result in an automatic 24-hour suspension of service.
+
+NatStat API+
+As of November 2025, National Statistical now offers an affordable annual or non-expiring service upgrade for heavy API users who require increased flexibility in terms of volume and access.
+
+100,000 API calls per day. API+ immediately switches the reset timeframe from hourly to daily. The counter is reset each day at 12:01 am Eastern Time.
+
+No IP or concurrency restrictions. The six-IP block restriction is removed with API+. It's specifically designed to facilitate data retrieval applications built on service and cloud providers, which are now utilizing rotating IPs much more often.
+
+First access to new versions. API+ users get exclusive early access to new features, including the closed beta for NatStat API v4 (available to all users in Spring 2026).
+
+The NatStat API+ upgrade is an add-on package that requires an existing monthly, annual or non-expiring National Statistical subscription in order to work properly. If your underlying access enters a cancelled, expired or unpaid state, API+ will be suspended until reactivation, and will expire 365 days after purchase. All NatStat products are non-refundable and non-transferrable.
+
+Please note that API+-enabled accounts are still subject to the abuse policy (see below) in regards to over-excessive concurrency that directly impacts the availability of the service for other users.
+
+NatStat API+ is available on an annual basis via this link. If you own a Super Skybox ticket or other non-expiring subscription, you can choose to make a one-time payment via card, app, BNPL or crypto to add API+ to your account in perpetuity.
+
+API Abuse
+Please note that National Statistical reserves all rights to temporarily throttle data speeds or impose additional data limits in cases of abuse, an excessive number of IP addresses accessing the API within the same 15-second period via the same key, a key accessing the API more than four times per second, improperly written code that affects other customers' use of the NatStat API in any way, or construction of an identical paid app or website that utilizes a high percentage of National Statistical's data in an effort to directly replicate National Statistical's services.
+
+Offending parties will be given one written warning via the email address linked to their accounts, along with a manual API key reset. On the second infraction, API keys will be revoked, access will be temporarily suspended, with the option to cancel the account with a refund issued for any and all remaining account credit. On the third infraction, API access will be permanently terminated without any further recourse or refund.
+
+
+API v3.5 Endpoints
+There are 29 endpoints in this version. Also see: documentation. Switch to: API v1, API v2
+/datastatus — Database Status and Known Issues
+
+/teamcodes — Team Codes
+
+/leaguecodes — League Codes
+
+/seasons — Seasons
+
+/teams — Teams
+
+/players — Players
+
+/games — Games
+
+/boxscores — Classic Boxscores
+
+/stats — Player/Team Statistics
+
+/glossary — Stat Glossary
+
+/playerperfs — Player Performances
+
+/teamperfs — Team Performances
+
+/playbyplay — Play-by-Play
+
+/events — Events
+
+/lineups — Lineups
+
+/pitchfx — Pitch Data
+
+/officials — Officials and Umpires
+
+/venues — Venues
+
+/elo — ELO Ratings
+
+/forecasts — Game Forecasts
+
+/projline — Projected Statlines
+
+/winprob — Win Probabilities
+
+/simulations — Game Simulations
+
+/moneyline — Money Line
+
+/pointspread — Point Spread
+
+/overunder — Over/Under
+
+/news — News
+
+/videos — Videos
+
+/transactions — Transactions
+
+/datastatus — Database Status and Known Issues
+AmerBB AsiaBB EuroBB GL MB2 MB3 MBB MBIA MBJC NBA WB2 WB3 WBB WBIA WBJC WBPro WNBA CFB PFB CBB KBO MiLB MLB NPB FC KHL MHK MiLH NHL WHK
+
+A query to this endpoint will return metadata about the status of a service database, and a list of known data issues.
+
+Please note that this endpoint can be used synonymously as status.
+
+The maximum number of records returned by this endpoint is 100. If the number of records exceeds this amount, pagination will be applied and a page-next URI value will be returned in the meta node.
+
+Sample Data
+Here is an example of how to properly construct a query to this endpoint, as well as test output in JSON format to download.
+
+Basketball Americas Data Status
+https://api3.natst.at/xxxx-xxxxxx/datastatus/amerbb
+
+
+Path Parameters
+apikey  required    A valid API key in xxxx-xxxxxx format. This must be the first path parameter. Example: https://api3.natst.at/xxxx-xxxxxx/...
+endpoint  required    The API endpoint to query. This must be the second path parameter. Example: https://api3.natst.at/xxxx-xxxxxx/datastatus/...
+service required    One of 30 NatStat data services to query. A full list can be found in the documentation. This must be the third path parameter. Example: https://api3.natst.at/xxxx-xxxxxx/datastatus/nhl/...
+Range Parameters
+Range parameters are optional comma-separated values placed after the API key, endpoint and service code in the URI. Values may be used in combination to further refine a search.
+
+dataformat  optional    Controls the data format by which query results are returned. Acceptable values are xml, json or php. The default value is json. Example: https://api3.natst.at/xxxx-xxxxxx/datastatus/nba/xml
+season  optional    A valid season code (the year when a particular season completes) in YYYY format. A list of available values can be retrieved from the /seasons endpoint. Example: https://api3.natst.at/xxxx-xxxxxx/datastatus/nba/2025
+Pagination Parameter
+Please note that when pagination is used with a query without a range parameter, an underscore must be placed in the fourth slash position so that the URI remains valid.
+
+offset  optional    A fifth (optional) path parameter is a paginated "offset" number for recordsets exceeding 100. The default is 0, the beginning of the recordset. Example: https://api3.natst.at/xxxx-xxxxxx/datastatus/nba/_/100
+ 
+

@@ -1,0 +1,225 @@
+
+NCAA Tournament Prediction Project Plan (NatStat API, EDA, and ML)
+Executive Summary
+We will build a Python-based project to predict NCAA tournament brackets using NatStat API data for women’s (WBB) and men’s (MBB) college basketball. First, we authenticate to NatStat’s v3 API (using the provided key) and download team, schedule, and boxscore data for both WBB and MBB. Next, we perform extensive EDA on each dataset (summary tables, distributions, trend charts)
+. We then engineer features (team-level, matchup-level, and temporal features) and construct labels for game winners as well as tournament milestones (Sweet 16, Final 4, finals, champion). We split data by season for training/validation/testing. We try multiple supervised models (logistic regression, SVM, random forest, XGBoost/LightGBM, neural nets, and pairwise ranking approaches) with hyperparameter tuning. Evaluation metrics will include game-level accuracy and log-loss, and for higher rounds (Final 4, champion) we emphasize recall/precision (for example, champion recall is critical
+). We also analyze feature importance (e.g. “Wins Above Bubble” was a top predictor in one study
+), calibrate probabilities, and ensemble models. The code will be organized into three notebooks/files: 1_data_eda, 2_modeling, and 3_report_utils. Tables will summarize available API endpoints, model choices, and metric strategies. Finally, a project timeline (shown in Mermaid Gantt chart) lays out milestones from data acquisition through final reporting.
+
+1. Data Acquisition & API Access
+NatStat API v3 Overview: NatStat’s documentation provides endpoints categorized by sport. In particular, endpoints exist for NCAA Men’s Basketball (MBB) and Women’s Basketball (WBB)
+. We will use the provided API key (7f10-3c2730) to authenticate. Typically, NatStat expects the key in a header (e.g. "x-api-key": API_KEY) with each request.
+
+Endpoints: We need to retrieve team rosters, game schedules/results, boxscore stats, and season summaries. Likely endpoints (to be confirmed) include:
+
+Data Type	Example MBB Endpoint	Example WBB Endpoint
+Teams	/api-v3/mbb/teams (by season)	/api-v3/wbb/teams
+Games/Schedule	/api-v3/mbb/games (or /schedule)	/api-v3/wbb/games
+Boxscores	/api-v3/mbb/boxscore (by game ID)	/api-v3/wbb/boxscore
+Season Stats	/api-v3/mbb/seasonstats (team-level)	/api-v3/wbb/seasonstats
+Player Statistics	/api-v3/mbb/playerstats	/api-v3/wbb/playerstats
+Notes: Actual endpoint paths and parameters must be verified against NatStat’s docs (if accessible). We will attempt to hit each endpoint and handle HTTP errors or missing endpoints by logging and moving on if unavailable.		
+
+Authentication & Rate Limiting (Code Example): We will write Python code to authenticate and fetch data. For example:
+
+python
+Copy
+import requests, json
+
+API_KEY = "7f10-3c2730"
+headers = {"x-api-key": API_KEY}
+url = "https://api.natstat.com/api-v3/mbb/teams"
+
+try:
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # raise exception for HTTP errors
+    teams_data = response.json()
+    # Save raw response to file
+    with open("raw_mbb_teams.json", "w") as f:
+        json.dump(teams_data, f)
+except requests.exceptions.HTTPError as err:
+    print(f"HTTP error: {err}")     # e.g. 401 unauthorized or 404 not found
+except Exception as e:
+    print(f"Request failed: {e}")
+We will similarly fetch schedules and boxscores for each season of interest (e.g. past 5–10 years, excluding any canceled seasons) and save them locally. We will inspect HTTP response headers for rate-limit info (e.g. 429 status) and implement time.sleep() backoff if needed. All raw JSON/CSV data will be saved for reproducibility.
+
+Data Inventory Table: Once data is downloaded, we will create summary tables indicating how many teams, games, and boxscores were retrieved for each season and division. This helps ensure completeness before proceeding to EDA.
+
+2. Preprocessing Plan
+Data Integration: We will merge the downloaded data into a unified analysis-ready format. For example, join game schedules with team stats by team ID, and attach game results. Key joins include: linking each boxscore to the corresponding game and team, and linking team-season stats to games. We will create a master “games” table containing fields like season, game_id, date, home_team_id, away_team_id, home_score, away_score, plus any team stats/features.
+Missing Data: We expect some missing values (especially for injured players, incomplete stat lines, or seasons with fewer teams). We will use logic (e.g. fill zeros if no stat, or drop games with incomplete boxscores) and imputation strategies (e.g. forward-fill team averages) as needed. Any dropped records will be logged. Summary statistics of missingness will be reported.
+Time Windows: For temporal features, we will compute rolling averages or aggregates over recent games. For example, each team’s form could be the average of the last N games (e.g. N=5 or 10) in that season
+. We will join these windowed features to each game row.
+Feature Tables: We will produce cleaned tables such as:
+Team-season stats: aggregated season totals and averages for each team (points per game, defensive stats, etc.).
+Team-game stats: boxscore stats for each team in each game (points, rebounds, etc.).
+Matchup table: one row per game per team (home and away entries) to facilitate pairwise modeling.
+Tournament labels: derived datasets indicating which teams made Sweet 16, Final 4, finals, and champion in each year. These can be built from the game results (e.g. mark teams as “Champion” = 1 in the year they won).
+Example Preprocessing Steps: We will script all of this in 1_data_eda.ipynb (or .py), including functions to: load raw data, merge tables, handle missing values, generate new features (e.g. point differential, win streak), and output cleaned feature tables for modeling.
+3. Exploratory Data Analysis (EDA)
+EDA is critical to validate data quality and uncover patterns
+. We will generate both descriptive statistics and visualizations. Key EDA tasks include:
+
+General Checks: Verify the number of teams, games per season, score ranges, distribution of outcomes (win/loss). For example, confirm that no team has an impossible score or negative values, and that each game has exactly two teams.
+Summary Tables:
+Teams by Conference: Count of teams per conference (or division) to spot imbalances.
+Games per Team Distribution: Table/chart of how many games each team played per season.
+Score Stats: Table of average points scored by team (offense) and allowed (defense).
+Distributions & Histograms:
+Histogram of scores (home vs away) to see range and skew (e.g. most scores cluster around X).
+Histogram of scoring margin.
+Box plots of key stats (points, rebounds, assists) by conference or seed.
+Time Trends:
+Line plots of league-wide trends (e.g. average points per game over seasons) to detect pace-of-play changes.
+Team-level trends (e.g. win percentage progression through season).
+Correlations:
+Compute and plot a correlation matrix of numeric features (points, rebounds, efficiencies, etc.) to spot multicollinearity. (Highly correlated features might be dropped or combined.)
+Target Distribution: Examine the proportion of home wins vs away wins, and occurrences of upsets (lower-seed beating higher-seed) if seed info is available.
+Round-specific Metrics: For NCAA tournaments, we may tabulate how many wins each seed got, upset rates by round, etc. (This informs later feature design.)
+Visuals: We will produce charts such as histograms, boxplots, scatter plots of two stats, and team performance heatmaps. Each major finding will be logged.
+EDA Outputs: The EDA notebook will output cleaned tables (CSV summaries), and PNG/SVG figures (histograms, correlation heatmaps, time series). Example: a correlation heatmap of team stats and a bar chart of team win totals by season.
+4. Feature Engineering
+We will design features at three levels: team-level, matchup-level, and temporal.
+
+Team-level features: Season-long or recent aggregates for each team, such as points per game (PPG), defensive efficiency, strength of schedule, and advanced metrics (e.g. True Shooting %, defensive rating). We will incorporate established metrics like KenPom or BPI if available. We will also compute customized features, for example “Wins Above Bubble (WAB)” which measures performance against tournament-bubble teams
+. (In one study, WAB was the single most important predictor
+.)
+Matchup-level features: For a game between Team A and Team B, we create features capturing their relative strengths, such as differences in PPG, differences in Elo rating, or binary indicators (e.g. is A home, is higher seed). We may encode seeds as ordinal or apply team embeddings if we have a way to learn them. Including head-to-head history or conference rivalry flags could be helpful.
+Temporal features: Recent form metrics as in
+: e.g. each team’s average stats over the last N games and their current Elo rating
+. We will recalc Elo after each game using point margin and home-court adjustment
+. Rolling win streak, days of rest, and injuries (if data) can also be included.
+Feature Embeddings: If using tree models we simply include all engineered features. For neural nets or SVM, we might embed categorical variables (e.g. conference, coach experience) using techniques like one-hot or learned embeddings.
+Feature Table: We will assemble a final feature table where each row is a game/team pair, with columns: all teamA features, teamB features, and matchup-specific differences. The target label is 1/0 for “teamA wins” (for example). Additional binary targets will be created (below).
+5. Label Construction (Targets)
+Game Winner: The primary target is binary classification: for each game, which team won. We will encode the home team (or team A) win as 1/0. This is a straightforward supervised label.
+Tournament Milestones: To track bracket success, we will create separate labels for:
+Made Sweet 16: binary flag for whether a team reached the Sweet 16 in that year.
+Made Final 4: binary flag for Final Four.
+Reached Finals: binary flag for finals (championship game).
+Champion: binary flag for the champion team.
+These can be derived from the NCAA tournament bracket outcomes. For example, any team that won 3 games (in a 64-team bracket) made Sweet 16. We can either mark these per team-season or per projected bracket simulation.
+Multi-Task Setup: We may train separate models for each label type, or use the single-game model iteratively to simulate rounds (predict winners round by round) and then derive which teams advance. In evaluation, champion and finals predictions are effectively determined by the single-game model predictions.
+6. Train/Validation/Test Splits
+Temporal Split: We will split data by season to avoid leakage. For example, train on seasons 2015–2023 and test on 2024 (omitting 2020). We can also use k-fold cross-validation by year (each fold holds out one season). This mirrors the approach of one study (training on 2014–2023, testing on 2024)
+.
+Cross-Validation: Time-series CV (sliding window) will be used so that models are validated on later seasons after being trained on earlier ones. This ensures models generalize to unseen tournaments.
+Balance: We will ensure class balance in splits (wins vs losses), though for a large dataset imbalance is not huge. If needed, consider class weighting or resampling, especially for rare targets like champion (only 1 positive per year).
+7. Model Selection & Training
+We will try a variety of models, as recommended by the syllabus and prior work:
+
+Model	Type	Notes and Use-Case
+Logistic Regression	Linear classifier	Baseline model, easy to interpret coefficients for feature importance.
+Decision Tree / RF	Tree ensemble	Captures non-linear interactions; Random Forest for robustness.
+XGBoost / LightGBM	Gradient boosting	State-of-the-art for tabular data; handles mixed features well.
+Support Vector Machine	Kernel-based	Effective for certain feature spaces; may need kernel/kernel approx.
+Neural Network (MLP)	Deep learning	Flexible model for complex patterns; more tuning/data required.
+Pairwise Ranking (e.g. XGB rank)	Ranking/classifier	Optimizes pairwise outcomes; directly models “which team is better.”
+
+Additionally, we might consider specialized ranking algorithms (e.g. logistic regression on Elo differences) or ensemble methods (stacking these base models). As seen in sports analytics studies, even simple models (logistic) can be competitive if features are good
+.
+
+Hyperparameter Tuning
+We will use grid search or randomized search (via scikit-learn or libraries like Optuna) with cross-validation to tune parameters (e.g. tree depth, number of estimators, regularization strength).
+For neural nets, we may tune architecture (layers, neurons) and optimization hyperparams (learning rate, batch size).
+For tree/boosting, tune max_depth, n_estimators, learning rate, min_child_weight, etc.
+Early stopping on validation loss can prevent overfitting.
+Interpretability and Calibration
+Feature Importance: We will compute feature importance (e.g. SHAP values or impurity-based importances) to interpret models. For instance, prior work identified “Wins Above Bubble” as a key feature
+. We will examine top predictors in our models to gain insights.
+Probability Calibration: Since we output probabilities of win, we will check calibration (reliability curves) and possibly apply Platt scaling or isotonic regression. Well-calibrated probabilities could be useful if using ranking metrics.
+Ensembling: We will experiment with ensembling (e.g. blending logistic, tree, NN) via simple averaging or meta-modeling. Ensembles often improve stability across years.
+8. Evaluation Metrics
+We will assess both game-level accuracy and bracket-level success:
+
+Prediction Task	Example Metrics	Rationale
+Game Winner	Accuracy, Log Loss	Accuracy measures overall correct picks. Log loss evaluates probability quality.
+Sweet 16 / Final 4	Recall, Precision, F1	Emphasize correctly identifying teams that advance. High recall ensures true advancers are caught.
+Finals (champ game)	Recall, Precision, F1	Similar to Final 4, identifying finalist teams.
+Champion	Recall (True Positives)	The champion is a single class; we want to correctly predict the actual winner. Research shows champion recall (TPR) is most critical
+.
+Overall Bracket	Bracket Score (weighted)	Using a weighted scoring system (points for each correct pick by round) reflects bracket pool scoring.
+
+For game outcomes, accuracy or AUC-ROC are straightforward. We will also use log-loss to account for prediction confidence.
+For later rounds, since very few teams succeed, metrics like recall and precision are more informative. For example, if our model predicts the champion correctly (one true positive), that greatly matters
+. One study chose their model based on 100% champion recall
+.
+We may also compute a simulated bracket score (e.g. NCAA scoring) as an aggregate metric.
+Model Comparison Table: We will tabulate each model’s performance across these metrics (e.g. accuracy vs recall vs log-loss) to aid selection.
+9. File Organization (Reproducible Structure)
+The project code will be organized into three main files/notebooks, each with specific roles:
+
+1_data_eda.ipynb (Data & EDA): Code to fetch data from NatStat, clean and merge datasets, and perform all EDA. Contents include: API authentication code, data loading, cleaning functions, summary tables, and charts. Expected outputs: Cleaned CSVs of teams/games, summary stats tables, and PNG/SVG figures (histograms, correlation heatmaps, etc.).
+2_modeling.ipynb (Model Training): Code for feature engineering (creating game/matchup features), label creation, model training and tuning. This file will iterate through model pipelines: setting up train/test splits, training models, performing CV, and evaluating performance. Expected outputs: Trained model objects (saved), performance metrics (tables), and plots (ROC curves, learning curves).
+3_report_and_utils.ipynb (Reporting & Utilities): Helper functions and final report generation. This includes code to apply models to test data or new brackets, generate final predictions (e.g. simulate bracket picks), and compile results. It will also contain tables and figures summarizing model comparisons. Expected outputs: Final results table (e.g. predicted champions, actual vs predicted metrics), and consolidated visualizations (feature importances, calibration plots).
+All code will be documented and parameterized (e.g. seasons to analyze, API key as variable). We will use version control (git) to track these files and notebooks.
+
+10. Summary Tables
+API Endpoints (hypothetical):
+
+Data Type	MBB Endpoint	WBB Endpoint
+Teams	/api-v3/mbb/teams	/api-v3/wbb/teams
+Games/Schedule	/api-v3/mbb/games	/api-v3/wbb/games
+Boxscore	/api-v3/mbb/boxscore	/api-v3/wbb/boxscore
+Season Stats	/api-v3/mbb/seasonstats	/api-v3/wbb/seasonstats
+Player Stats	/api-v3/mbb/playerstats	/api-v3/wbb/playerstats
+
+(Actual endpoint names to be confirmed from NatStat docs.)
+
+Model Choices Comparison:
+
+Model	Type	Pros	Cons/Notes
+Logistic Regression	Linear	Interpretable coefficients	May underfit complex patterns
+Random Forest	Ensemble (bagging)	Handles nonlinearity, robust	Less interpretable, slower at large scale
+XGBoost/LightGBM	Ensemble (boosting)	High accuracy, handles heterogeneity	Many hyperparams to tune
+SVM	Kernel	Effective in high-dim spaces	Scalability issues, sensitive to parameters
+Neural Net (MLP)	Deep	Flexible function approx.	Requires more data/tuning, black-box
+Pairwise Ranking	Specialized	Directly models match outcome	More complex setup, less common library support
+
+Evaluation Metrics:
+
+Target Prediction	Example Metrics	Why These Matter
+Game Winner	Accuracy, Log Loss	Overall correctness and confidence quality.
+Sweet 16 / Final 4	Recall, Precision, F1	Identify which teams advance (minimize missed actuals).
+Finals	Recall, Precision	As above, with even fewer positives.
+Champion	Recall, Precision, F1
+Champion is rare (one per year); prioritizing recall ensures the winner is predicted
+.
+Overall Bracket	Weighted Bracket Score	Weighted scoring mirrors typical bracket pools.
+
+11. Timeline & Milestones
+We propose the following phased project timeline (Gantt chart). Dates are illustrative (6-week project starting Feb 1, 2026):
+
+2026-02-01
+2026-02-08
+2026-02-15
+2026-02-22
+2026-03-01
+2026-03-08
+Set up environment
+NatStat API authentication
+Download WBB & MBB data
+Data cleaning & merging
+Exploratory analyses & visuals
+Feature engineering
+Train/test split & baselines
+Model tuning & cross-validation
+Model evaluation & selection
+Interpretation & ensembling
+Final report writing
+Project review & presentation
+Phase 1: Data & EDA
+Phase 2: Modeling
+Phase 3: Evaluation & Reporting
+NCAA Bracket Prediction Project Timeline
+
+
+Show code
+Each phase’s tasks align with project objectives: Phases 1–2 cover data access, cleaning, and exploratory analysis (validating patterns as recommended in sports data EDA
+), while Phase 3 focuses on modeling, evaluation, and synthesis of results. The timeline will be adjusted if additional data cleaning or model iterations are needed.
+
+Sources: We rely primarily on NatStat’s API v3 documentation for endpoints (via their API docs)
+. Methodological guidance is drawn from sports analytics literature (e.g. using classification for game outcomes
+ and prioritizing recall for champion prediction
+). All code and analysis will reference these principles and use the latest Python libraries for data science.
+
