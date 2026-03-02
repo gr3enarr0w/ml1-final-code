@@ -1,0 +1,4 @@
+task,league,model_family,criterion
+selection,Combined,decision_tree,bubble PR-AUC + precision@K + stability proxy
+bracket,MBB,mlp,log-loss + calibration + AUC
+bracket,WBB,autoencoder_proxy_mlp,log-loss + calibration + AUC

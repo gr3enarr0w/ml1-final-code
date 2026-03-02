@@ -1,0 +1,5 @@
+task,subset,rows
+selection,train_no_2026,11238
+selection,holdout_2026,726
+bracket,train_no_2026,160962
+bracket,holdout_2026,10428

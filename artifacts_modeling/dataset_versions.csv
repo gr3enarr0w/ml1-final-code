@@ -1,0 +1,9 @@
+league,dataset,path,exists,size_bytes,mtime_utc
+MBB,games,games.parquet,True,1933243,2026-03-01T20:41:05.381355286+00:00
+MBB,teams,teams.parquet,True,10834,2026-03-01T20:41:05.382886648+00:00
+MBB,team_stats,team_stats.parquet,True,370792,2026-03-01T20:41:05.387749672+00:00
+MBB,elo,elo.parquet,True,32034,2026-03-01T20:41:05.392896414+00:00
+WBB,games,wbb_games.parquet,True,1464508,2026-03-01T22:54:14.376332283+00:00
+WBB,teams,wbb_teams.parquet,True,12146,2026-03-01T22:54:14.377139568+00:00
+WBB,team_stats,wbb_team_stats.parquet,True,303951,2026-03-01T22:54:14.381822348+00:00
+WBB,elo,wbb_elo.parquet,True,26448,2026-03-01T22:54:14.383070946+00:00

@@ -1,0 +1,3 @@
+task,features
+selection,"overall_winpct,end_elo,sos_proxy,net_rating,last10_winpct,conference_proxy,league"
+bracket,"elo_diff,winpct_diff,ppp_diff,pace_diff,home_favored,neutral,league"

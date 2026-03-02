@@ -1,0 +1,2 @@
+season,team_code,games_played,overall_winpct,avg_margin,conf_winpct,nonconf_winpct,last10_winpct,net_rating,o_ppp,d_ppp,pace,end_elo,elo_rank,selected_proxy,sos_proxy,conference_proxy,league,y,_p,_yhat,elo_pct,error_type
+2026,SETON,27,0.6666666666666666,6.72,0.6666666666666666,0.6666666666666666,0.4,,1.0532527801406073,,68.94896313969092,1566.0,68.0,1,1539.8148148148148,BIGEAST,MBB,1,0.0,0,0.7947658402203857,false_negative

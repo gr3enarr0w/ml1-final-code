@@ -1,0 +1,26 @@
+{
+  "seed": 42,
+  "holdout_season": 2026,
+  "leagues": [
+    "MBB",
+    "WBB"
+  ],
+  "files": {
+    "MBB": {
+      "games": "games.parquet",
+      "teams": "teams.parquet",
+      "team_stats": "team_stats.parquet",
+      "elo": "elo.parquet"
+    },
+    "WBB": {
+      "games": "wbb_games.parquet",
+      "teams": "wbb_teams.parquet",
+      "team_stats": "wbb_team_stats.parquet",
+      "elo": "wbb_elo.parquet"
+    }
+  },
+  "targets": {
+    "bracket": "home_win",
+    "selection": "selected_proxy"
+  }
+}
