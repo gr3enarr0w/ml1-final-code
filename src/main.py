@@ -4,6 +4,7 @@ import logging
 import requests
 # import gemini
 import transformers
+from transformers import AutoConfig, AutoTokenizer, AutoModel
 import torch
 # import gym
 import tqdm
