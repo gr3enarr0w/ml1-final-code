@@ -1,0 +1,18 @@
+[project]
+name = "ncaa_pred"
+version = "0.1.0"
+description = "NCAA men's basketball prediction-market package using state/env logic"
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dependencies = [
+	"pandas",
+	"pyarrow",
+	"streamlit",
+	"numpy",
+	"scikit-learn",
+]
