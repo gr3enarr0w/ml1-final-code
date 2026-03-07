@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+import sentence-transformers
+
 
 class WinPredictor:
     def __init__(self):
@@ -11,5 +13,8 @@ class WinPredictor:
     def predict_proba(self, X: np.ndarray):
         return self.model.predict_proba(X)[:, 1]
     
+
+
+def main():
 
 

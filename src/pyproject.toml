@@ -1,18 +1,25 @@
 [project]
 name = "ncaa_pred"
-version = "0.1.0"
-description = "NCAA men's basketball prediction-market package using state/env logic"
+version = "0.2.0"
+description = "NCAA MBB prediction and hybrid search package"
 requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "pyarrow>=14.0",
+  "streamlit>=1.30",
+  "scikit-learn>=1.4",
+  "torch>=2.2",
+  "sentence-transformers>=3.0",
+  "transformers>=4.45",
+]
+
+[project.scripts]
+ncaa-search = "ncaa_pred.search.cli:main"
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[project]
-dependencies = [
-	"pandas",
-	"pyarrow",
-	"streamlit",
-	"numpy",
-	"scikit-learn",
-]
+[tool.setuptools.packages.find]
+where = ["ncaa_pred"]
